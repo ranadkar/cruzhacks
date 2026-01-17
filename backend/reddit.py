@@ -1,18 +1,14 @@
 import os
 from dotenv import load_dotenv
 import asyncpraw
-from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
 import asyncio
 import json
 import time
-from datetime import datetime
 
 
 load_dotenv()
 app_id = os.getenv("REDDIT_CLIENT_ID")
 client_secret = os.getenv("REDDIT_CLIENT_SECRET")
-
-analyzer = SentimentIntensityAnalyzer()
 
 
 def get_async_reddit():
@@ -23,321 +19,153 @@ def get_async_reddit():
     )
 
 
-async def search_posts_by_query():
+def build_comment_dict_sync(comment, depth=0, max_depth=2):
+    """Synchronous comment builder - defined once, reused everywhere"""
+    if isinstance(comment, asyncpraw.models.MoreComments):
+        return None
+    if str(comment.author).lower() == "automoderator":
+        return None
     
+    comment_data = {
+        "url": f"https://reddit.com{comment.permalink}",
+        "content": comment.body,
+        "author": str(comment.author),
+        "score": comment.score,
+        "replies": [],
+        "depth": depth
+    }
+    
+    if depth < max_depth and hasattr(comment, 'replies') and comment.replies:
+        for reply in list(comment.replies)[:3]:
+            if not isinstance(reply, asyncpraw.models.MoreComments):
+                reply_data = build_comment_dict_sync(reply, depth + 1, max_depth)
+                if reply_data:
+                    comment_data["replies"].append(reply_data)
+    
+    return comment_data
+
+
+async def scrape_post_batch(reddit, post_ids, post_infos):
+    """Scrape multiple posts using a SINGLE Reddit connection"""
+    results = []
+    
+    for post_id, post_info in zip(post_ids, post_infos):
+        try:
+            submission = await reddit.submission(post_id)
+            await submission.load()
+            
+            comments_list = []
+            comment_count = 0
+            max_comments = 10
+            
+            for comment in submission.comments:
+                if comment_count >= max_comments:
+                    break
+                if not isinstance(comment, asyncpraw.models.MoreComments):
+                    comment_data = build_comment_dict_sync(comment, depth=0)
+                    if comment_data:
+                        comments_list.append(comment_data)
+                        comment_count += 1
+            
+            post_data = {
+                "source": "Reddit",
+                "title": submission.title,
+                "ai_summary": f"Post about {submission.title[:50]}... with {submission.num_comments} comments",
+                "contents": submission.selftext if submission.selftext else "[Link post]",
+                "url": f"https://reddit.com{submission.permalink}",
+                "score": submission.score,
+                "num_comments": submission.num_comments,
+                "created_utc": submission.created_utc,
+                "comments": comments_list
+            }
+            results.append(post_data)
+            print(f"✓ {post_info['title'][:60]}... ({comment_count} comments)")
+            
+        except Exception as e:
+            print(f"✗ Error on {post_info['title'][:40]}: {e}")
+            results.append(None)
+    
+    return results
+
+
+async def search_posts_by_query():
     reddit = get_async_reddit()
     
     try:
-        # Get user query
         query = input("Enter your search query: ").strip()
         if not query:
             print("No query provided. Exiting.")
             return
         
-        subreddit_name = input("Enter subreddit to search (default: PoliticalDebate): ").strip()
-        if not subreddit_name:
-            subreddit_name = "PoliticalDebate"
-        
+        subreddit_name = input("Enter subreddit to search (default: PoliticalDebate): ").strip() or "PoliticalDebate"
         limit = input("How many posts to retrieve? (default: 50): ").strip()
         limit = int(limit) if limit.isdigit() else 50
         
-        print(f"\nSearching r/{subreddit_name} for: '{query}'")
-        print(f"Retrieving up to {limit} posts...\n")
+        print(f"\nSearching r/{subreddit_name} for: '{query}' (up to {limit} posts)...\n")
         
         subreddit = await reddit.subreddit(subreddit_name)
         
-        # Search posts
+        # Collect all post info first (fast - single API call)
         search_results = []
-        count = 0
-        
         async for submission in subreddit.search(query, limit=limit, sort='relevance'):
-            count += 1
             search_results.append({
-                "index": count,
                 "id": submission.id,
                 "title": submission.title,
                 "score": submission.score,
                 "num_comments": submission.num_comments,
                 "url": f"https://reddit.com{submission.permalink}",
-                "created_utc": submission.created_utc
             })
         
         if not search_results:
             print("No results found.")
             return
         
-        # Display results
-        print(f"\n{'='*80}")
-        print(f"Found {len(search_results)} posts:")
-        print(f"{'='*80}\n")
+        print(f"Found {len(search_results)} posts. Starting fast scrape...\n")
         
-        for result in search_results:
-            print(f"[{result['index']}] {result['title'][:70]}")
-            print(f"    Score: {result['score']} | Comments: {result['num_comments']}")
-            print(f"    URL: {result['url']}")
-            print()
+        start_time = time.time()
         
-        # Save search results to file
-        search_file = f"search_results_{subreddit_name}_{query.replace(' ', '_')[:30]}.json"
-        with open(search_file, 'w', encoding='utf-8') as f:
-            json.dump(search_results, f, indent=2, ensure_ascii=False)
+        # Split into batches and process with multiple Reddit connections
+        num_workers = 5
+        batch_size = max(1, len(search_results) // num_workers)
+        batches = [search_results[i:i + batch_size] for i in range(0, len(search_results), batch_size)]
         
-        print(f"Search results saved to: {search_file}")
-        
-        # Automatically select all posts
-        print("\n" + "="*80)
-        print(f"Auto-selecting all {len(search_results)} posts for scraping...")
-        selected_posts = search_results
-        print(f"\nScraping {len(selected_posts)} posts with ALL comments using {min(5, len(selected_posts))} concurrent workers...\n")
-        
-        # Scrape selected posts with comments using concurrent workers
-        async def scrape_single_post(post_info, idx, total):
-            """Scrape a single post with all its comments"""
-            local_reddit = get_async_reddit()
-            
-            async def build_comment_dict(comment, depth=0):
-                if isinstance(comment, asyncpraw.models.MoreComments):
-                    return None
-                
-                if str(comment.author).lower() == "automoderator":
-                    return None
-                
-                comment_data = {
-                    "url": f"https://reddit.com{comment.permalink}",
-                    "content": comment.body,
-                    "author": str(comment.author),
-                    "score": comment.score,
-                    "replies": [],
-                    "depth": depth
-                }
-                
-                # Recursively build replies (now all MoreComments are expanded)
-                if hasattr(comment, 'replies') and comment.replies:
-                    for reply in comment.replies:
-                        if not isinstance(reply, asyncpraw.models.MoreComments):
-                            reply_data = await build_comment_dict(reply, depth + 1)
-                            if reply_data:
-                                comment_data["replies"].append(reply_data)
-                
-                return comment_data
-            
+        async def process_batch(batch):
+            """Each worker gets ONE Reddit connection for its entire batch"""
+            worker_reddit = get_async_reddit()
             try:
-                print(f"[{idx}/{total}] Scraping: {post_info['title'][:60]}...")
-                
-                submission = await local_reddit.submission(post_info['id'])
-                await submission.load()
-                
-                # Replace all MoreComments objects to get ALL comments
-                print(f"    [{idx}] Expanding all comment threads...")
-                try:
-                    await submission.comments.replace_more(limit=None)
-                except Exception as e:
-                    print(f"    [{idx}] ⚠ Warning: Could not expand all comments: {e}")
-                
-                # Fetch all top-level comments and their nested replies
-                print(f"    [{idx}] Processing comments...")
-                comments_list = []
-                comment_count = 0
-                max_comments = 10  # Limit to 10 comments
-                
-                # Use .list() to get ALL comments in a flat structure, then rebuild tree
-                all_comments = submission.comments.list()
-                top_level_comments = [c for c in all_comments if c.is_root]
-                
-                for comment in top_level_comments:
-                    if comment_count >= max_comments:  # Stop after max_comments
-                        break
-                    if not isinstance(comment, asyncpraw.models.MoreComments):
-                        comment_data = await build_comment_dict(comment, depth=0)
-                        if comment_data:
-                            comments_list.append(comment_data)
-                            comment_count += 1
-                
-                post_data = {
-                    "source": "Reddit",
-                    "title": submission.title,
-                    "ai_summary": f"Post about {submission.title[:50]}... with {submission.num_comments} comments and {submission.score} upvotes",
-                    "contents": submission.selftext if submission.selftext else "[Link post - no text content]",
-                    "url": f"https://reddit.com{submission.permalink}",
-                    "score": submission.score,
-                    "num_comments": submission.num_comments,
-                    "created_utc": submission.created_utc,
-                    "comments": comments_list
-                }
-                
-                print(f"    [{idx}] ✓ Scraped {comment_count} top-level comments ({len(all_comments)} total)")
-                await local_reddit.close()
-                return post_data
-                
-            except Exception as e:
-                print(f"    [{idx}] ✗ Error: {e}")
-                await local_reddit.close()
-                return None
+                post_ids = [p['id'] for p in batch]
+                results = await scrape_post_batch(worker_reddit, post_ids, batch)
+                return results
+            finally:
+                await worker_reddit.close()
         
-        # Process posts concurrently with a semaphore to limit concurrent workers
-        max_workers = min(5, len(selected_posts))  # Limit to 5 concurrent workers
-        semaphore = asyncio.Semaphore(max_workers)
+        # Run all batches concurrently
+        batch_results = await asyncio.gather(*[process_batch(batch) for batch in batches])
         
-        async def scrape_with_semaphore(post_info, idx, total):
-            async with semaphore:
-                return await scrape_single_post(post_info, idx, total)
+        # Flatten results
+        scraped_posts = []
+        for batch in batch_results:
+            scraped_posts.extend([p for p in batch if p is not None])
         
-        # Create tasks for all posts
-        tasks = [
-            scrape_with_semaphore(post_info, idx + 1, len(selected_posts))
-            for idx, post_info in enumerate(selected_posts)
-        ]
+        elapsed = time.time() - start_time
         
-        # Run all tasks concurrently and gather results
-        scraped_posts = await asyncio.gather(*tasks)
-        
-        # Filter out None values (failed scrapes)
-        scraped_posts = [p for p in scraped_posts if p is not None]
-        
-        # Save scraped posts
+        # Save results
         output_file = f"selected_posts_{subreddit_name}_{len(scraped_posts)}.json"
         with open(output_file, 'w', encoding='utf-8') as f:
             json.dump(scraped_posts, f, indent=2, ensure_ascii=False)
         
-        print(f"\n{'='*80}")
-        print(f"Successfully scraped {len(scraped_posts)} posts!")
-        print(f"Output file: {output_file}")
-        print(f"{'='*80}")
+        print(f"\n{'='*60}")
+        print(f"✓ Scraped {len(scraped_posts)} posts in {elapsed:.1f}s ({len(scraped_posts)/elapsed:.1f} posts/sec)")
+        print(f"✓ Saved to: {output_file}")
+        print(f"{'='*60}")
         
     except Exception as e:
-        print(f"Error occurred: {e}")
+        print(f"Error: {e}")
         import traceback
         traceback.print_exc()
-    
     finally:
         await reddit.close()
-        print("Done!")
-
-
-async def scrape_subreddit_posts():
-  
-    reddit = get_async_reddit()
-    
-    try:
-        # Target: r/PoliticalDebate, scrape 1000 posts with all comments
-        subreddit_name = "PoliticalDebate"
-        target_posts = 1000
-        
-        subreddit = await reddit.subreddit(subreddit_name)
-        print(f"Starting to scrape {target_posts} posts from r/{subreddit_name}")
-        print(f"Started at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
-        
-        all_posts = []
-        post_count = 0
-        request_count = 0
-        start_time = time.time()
-        
-        # Build the Comment structure recursively
-        async def build_comment_dict(comment, depth=0):
-            # Skip MoreComments objects
-            if isinstance(comment, asyncpraw.models.MoreComments):
-                return None
-            
-            # Skip AutoModerator comments
-            if str(comment.author).lower() == "automoderator":
-                return None
-            
-            comment_data = {
-                "url": f"https://reddit.com{comment.permalink}",
-                "content": comment.body,
-                "author": str(comment.author),
-                "score": comment.score,
-                "replies": [],
-                "depth": depth
-            }
-            
-            # Get all replies (limit depth to 3 to avoid infinite nesting)
-            if depth < 3 and hasattr(comment, 'replies') and comment.replies:
-                for reply in comment.replies:
-                    if not isinstance(reply, asyncpraw.models.MoreComments):
-                        reply_data = await build_comment_dict(reply, depth + 1)
-                        if reply_data:
-                            comment_data["replies"].append(reply_data)
-            
-            return comment_data
-        
-        # Scrape posts from hot, then top if needed
-        async for submission in subreddit.hot(limit=target_posts):
-            if post_count >= target_posts:
-                break
-            
-            try:
-                # Load submission to access comments
-                await submission.load()
-                request_count += 1
-                
-                # Fetch all top-level comments (asyncpraw handles rate limiting internally)
-                comments_list = []
-                async for comment in submission.comments:
-                    if not isinstance(comment, asyncpraw.models.MoreComments):
-                        comment_data = await build_comment_dict(comment, depth=0)
-                        if comment_data:
-                            comments_list.append(comment_data)
-                
-                # Build the Post structure
-                post_data = {
-                    "source": "Reddit",
-                    "title": submission.title,
-                    "ai_summary": f"Post about {submission.title[:50]}... with {submission.num_comments} comments and {submission.score} upvotes",
-                    "contents": submission.selftext if submission.selftext else "[Link post - no text content]",
-                    "url": f"https://reddit.com{submission.permalink}",
-                    "score": submission.score,
-                    "num_comments": submission.num_comments,
-                    "created_utc": submission.created_utc,
-                    "comments": comments_list
-                }
-                
-                all_posts.append(post_data)
-                post_count += 1
-                
-                # Progress update every 10 posts
-                if post_count % 10 == 0:
-                    elapsed = time.time() - start_time
-                    print(f"Progress: {post_count}/{target_posts} posts scraped | "
-                          f"Elapsed: {elapsed/60:.1f} min | "
-                          f"Last: {submission.title[:60]}...")
-                    
-                    # Save checkpoint every 50 posts
-                    if post_count % 50 == 0:
-                        checkpoint_file = f"checkpoint_{post_count}.json"
-                        with open(checkpoint_file, 'w', encoding='utf-8') as f:
-                            json.dump(all_posts, f, indent=2, ensure_ascii=False)
-                        print(f"  → Checkpoint saved: {checkpoint_file}")
-                
-            except Exception as e:
-                print(f"Error processing post {post_count + 1}: {e}")
-                continue
-        
-        # Save final results
-        output_file = f"r_{subreddit_name}_{post_count}_posts.json"
-        with open(output_file, 'w', encoding='utf-8') as f:
-            json.dump(all_posts, f, indent=2, ensure_ascii=False)
-        
-        elapsed = time.time() - start_time
-        print(f"\n{'='*80}")
-        print("Scraping complete!")
-        print(f"Total posts scraped: {post_count}")
-        print(f"Total time: {elapsed/60:.1f} minutes ({elapsed/3600:.1f} hours)")
-        print(f"Output file: {output_file}")
-        print(f"{'='*80}")
-    
-    except Exception as e:
-        print(f"Fatal error occurred: {e}")
-        import traceback
-        traceback.print_exc()
-    
-    finally:
-        await reddit.close()
-        print("Done!")
 
 
 if __name__ == "__main__":
-    import asyncio
-    # asyncio.run(test_scrape())
-    # asyncio.run(scrape_subreddit_posts())
     asyncio.run(search_posts_by_query())
