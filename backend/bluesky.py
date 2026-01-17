@@ -31,8 +31,8 @@ async def search_bluesky(client, query: str, sort: str = "latest", limit: int = 
     for post in response.posts[:limit]:
         text_content = post.record.text if hasattr(post.record, "text") else ""
         
-        # Skip posts with no text content (video-only posts)
-        if not text_content or not text_content.strip():
+        # Skip posts with no text content (video-only posts) or content less than 100 characters
+        if not text_content or not text_content.strip() or len(text_content.strip()) < 100:
             continue
         
         sentiment_scores = analyzer.polarity_scores(text_content)
