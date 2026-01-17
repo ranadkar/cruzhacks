@@ -59,7 +59,7 @@ async def search_bluesky(client, query: str, sort: str = "top", limit: int = 50)
             "display_name": author_display,
             "contents": text_content,
             "date": to_epoch_time(post.record.created_at if hasattr(post.record, "created_at") else ""),
-            "likes": post.like_count,
+            "score": post.like_count,
             "reposts": post.repost_count,
             "replies": post.reply_count,
             "quotes": post.quote_count if hasattr(post, "quote_count") else 0,
