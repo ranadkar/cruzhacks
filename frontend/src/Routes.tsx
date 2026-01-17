@@ -6,7 +6,6 @@ import Nav from './components/nav'
 function AppContent() {
   const location = useLocation();
   const isLandingPage = location.pathname === '/';
-
   return (
     <>
       {!isLandingPage && <Nav />}
