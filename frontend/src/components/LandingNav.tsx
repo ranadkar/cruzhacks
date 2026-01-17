@@ -1,3 +1,4 @@
+import ThemeToggle from './ThemeToggle';
 import styles from '../styles/LandingNav.module.scss';
 
 const LandingNav = () => {
@@ -15,9 +16,12 @@ const LandingNav = () => {
                     <a className={styles.navLink} href="#challenge">The Challenge</a>
                     <a className={styles.navLink} href="#methodology">Methodology</a>
                 </nav>
-                <button className={styles.mobileMenuButton}>
-                    <span className="material-symbols-outlined">menu</span>
-                </button>
+                <div className={styles.actions}>
+                    <ThemeToggle />
+                    <button className={styles.mobileMenuButton}>
+                        <span className="material-symbols-outlined">menu</span>
+                    </button>
+                </div>
             </div>
         </header>
     );

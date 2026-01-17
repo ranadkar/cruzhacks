@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html class="light" lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>Pulse | Multi-Source Content Selection</title>
+    <link href="https://fonts.googleapis.com" rel="preconnect" />
+    <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect" />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400&amp;family=Manrope:wght@300;400;500;600;700;800&amp;display=swap"
+        rel="stylesheet" />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+        rel="stylesheet" />
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "charcoal": "#020617",
+                        "off-white": "#F8FAFC",
+                        "light-gray": "#F1F5F9",
+                        "primary-blue": "#2563EB",
+                        "vibrant-blue": "#3B82F6",
+                        "vibrant-red": "#EF4444",
+                        "vibrant-amber": "#F59E0B",
+                        "border-light": "#E2E8F0",
+                    },
+                    fontFamily: {
+                        "serif": ["Lora", "serif"],
+                        "sans": ["Manrope", "sans-serif"]
+                    }
+                },
+            },
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer base {
+            body {
+                @apply bg-off-white text-charcoal;
+            }
+        }
+        .grid-pattern {
+            background-image: 
+                linear-gradient(to right, rgba(0,0,0,0.03) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(0,0,0,0.03) 1px, transparent 1px);
+            background-size: 40px 40px;
+        }
+        .card-shadow {
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+        }
+        .card-glow-blue:hover {
+            box-shadow: 0 10px 15px -3px rgba(59, 130, 246, 0.1);
+            border-color: rgba(59, 130, 246, 0.3);
+        }
+        .card-glow-red:hover {
+            box-shadow: 0 10px 15px -3px rgba(239, 68, 68, 0.1);
+            border-color: rgba(239, 68, 68, 0.3);
+        }
+        .card-glow-neutral:hover {
+            box-shadow: 0 10px 15px -3px rgba(100, 116, 139, 0.1);
+            border-color: rgba(100, 116, 139, 0.3);
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.05);
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #CBD5E1;
+            border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #94A3B8;
+        }
+    </style>
+</head>
+
+<body
+    class="font-sans antialiased selection:bg-vibrant-blue selection:text-white h-screen flex flex-col overflow-hidden">
+    <header class="sticky top-0 z-50 bg-white border-b border-border-light shrink-0">
+        <div class="max-w-[1800px] mx-auto px-6 h-20 flex items-center justify-between">
+            <div class="flex items-center gap-8">
+                <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 bg-vibrant-blue text-white flex items-center justify-center rounded-sm">
+                        <span class="material-symbols-outlined text-[22px]">balance</span>
+                    </div>
+                    <span class="font-serif font-bold text-2xl tracking-tight text-charcoal">Pulse.</span>
+                </div>
+                <div class="h-8 w-px bg-border-light hidden md:block"></div>
+                <div class="hidden md:flex items-center gap-3">
+                    <span class="text-[10px] font-bold uppercase tracking-widest text-slate-400">Active Topic</span>
+                    <div
+                        class="flex items-center gap-2 px-3 py-1 bg-light-gray border border-border-light rounded-full">
+                        <span class="w-2 h-2 rounded-full bg-vibrant-blue animate-pulse"></span>
+                        <span class="text-sm font-semibold text-charcoal">NATO Funding Strategy</span>
+                    </div>
+                </div>
+            </div>
+            <div class="flex items-center gap-6">
+                <div class="text-right hidden sm:block">
+                    <div class="text-[10px] font-bold uppercase tracking-tighter text-slate-400">Sources Selected</div>
+                    <div class="text-sm font-mono font-bold text-vibrant-blue">12 / 24 Available</div>
+                </div>
+                <button class="p-2 text-slate-400 hover:text-charcoal transition-colors">
+                    <span class="material-symbols-outlined">settings</span>
+                </button>
+            </div>
+        </div>
+    </header>
+    <main class="flex-grow relative flex flex-col min-h-0 bg-off-white">
+        <div class="absolute inset-0 grid-pattern pointer-events-none"></div>
+        <div class="flex-1 w-full max-w-[1800px] mx-auto px-6 pt-8 pb-0 min-h-0 relative z-10">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 h-full">
+                <div
+                    class="flex flex-col h-full overflow-hidden bg-slate-100/50 rounded-t-xl border-x border-t border-border-light">
+                    <div
+                        class="flex items-center gap-4 px-6 py-4 bg-white/80 backdrop-blur border-b border-border-light shrink-0 z-20">
+                        <h2 class="text-xs font-black uppercase tracking-[0.3em] text-vibrant-blue">Left-Leaning Outlets
+                        </h2>
+                        <div class="h-px bg-vibrant-blue/20 flex-1"></div>
+                        <button
+                            class="text-[10px] font-bold text-slate-400 hover:text-vibrant-blue uppercase">All</button>
+                    </div>
+                    <div class="overflow-y-auto flex-1 p-6 space-y-4 custom-scrollbar pb-32">
+                        <div
+                            class="group bg-white border border-border-light p-5 rounded-xl transition-all cursor-pointer card-shadow card-glow-blue relative">
+                            <div class="flex justify-between items-start mb-4">
+                                <div class="flex items-center gap-3">
+                                    <div
+                                        class="w-8 h-8 rounded bg-slate-50 flex items-center justify-center font-bold text-[10px] border border-slate-200 text-slate-600">
+                                        CNN</div>
+                                    <div>
+                                        <h3 class="text-xs font-bold text-slate-600 uppercase tracking-wide">CNN
+                                            Politics</h3>
+                                        <p class="text-[10px] text-slate-400 font-mono">2h ago • Politics</p>
+                                    </div>
+                                </div>
+                                <input checked=""
+                                    class="w-5 h-5 rounded border-slate-300 text-vibrant-blue focus:ring-vibrant-blue focus:ring-offset-white"
+                                    type="checkbox" />
+                            </div>
+                            <p
+                                class="font-serif text-lg leading-snug mb-4 text-charcoal group-hover:text-vibrant-blue transition-colors">
+                                White House signals increased pressure on European allies over defense spending
+                                commitments.</p>
+                            <div class="flex items-center justify-between pt-4 border-t border-slate-50">
+                                <div class="flex items-center gap-2">
+                                    <span class="text-[10px] font-bold text-slate-400 uppercase">Bias</span>
+                                    <div class="flex h-1.5 w-16 bg-slate-100 rounded-full overflow-hidden">
+                                        <div class="bg-vibrant-blue w-3/4 h-full"></div>
+                                    </div>
+                                </div>
+                                <div class="flex items-center gap-1 text-slate-400">
+                                    <span class="material-symbols-outlined text-sm">visibility</span>
+                                    <span class="text-[10px] font-bold">14.2k</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div
+                            class="group bg-white border border-border-light p-5 rounded-xl transition-all cursor-pointer card-shadow card-glow-blue relative">
+                            <div class="flex justify-between items-start mb-4">
+                                <div class="flex items-center gap-3">
+                                    <div
+                                        class="w-8 h-8 rounded bg-slate-50 flex items-center justify-center font-bold text-[10px] border border-slate-200 text-slate-600">
+                                        MSN</div>
+                                    <div>
+                                        <h3 class="text-xs font-bold text-slate-600 uppercase tracking-wide">MSNBC</h3>
+                                        <p class="text-[10px] text-slate-400 font-mono">4h ago • Opinion</p>
+                                    </div>
+                                </div>
+                                <input
+                                    class="w-5 h-5 rounded border-slate-300 text-vibrant-blue focus:ring-vibrant-blue focus:ring-offset-white"
+                                    type="checkbox" />
+                            </div>
+                            <p
+                                class="font-serif text-lg leading-snug mb-4 text-charcoal group-hover:text-vibrant-blue transition-colors">
+                                The existential threat to NATO: Why current funding debates miss the larger democratic
+                                picture.</p>
+                            <div class="flex items-center justify-between pt-4 border-t border-slate-50">
+                                <div class="flex items-center gap-2">
+                                    <span class="text-[10px] font-bold text-slate-400 uppercase">Bias</span>
+                                    <div class="flex h-1.5 w-16 bg-slate-100 rounded-full overflow-hidden">
+                                        <div class="bg-vibrant-blue w-full h-full"></div>
+                                    </div>
+                                </div>
+                                <div class="flex items-center gap-1 text-slate-400">
+                                    <span class="material-symbols-outlined text-sm">visibility</span>
+                                    <span class="text-[10px] font-bold">8.9k</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div
+                    class="flex flex-col h-full overflow-hidden bg-slate-100/50 rounded-t-xl border-x border-t border-border-light">
+                    <div
+                        class="flex items-center gap-4 px-6 py-4 bg-white/80 backdrop-blur border-b border-border-light shrink-0 z-20">
+                        <h2 class="text-xs font-black uppercase tracking-[0.3em] text-slate-500">Social Discourse</h2>
+                        <div class="h-px bg-slate-200 flex-1"></div>
+                        <button class="text-[10px] font-bold text-slate-400 hover:text-charcoal uppercase">All</button>
+                    </div>
+                    <div class="overflow-y-auto flex-1 p-6 space-y-4 custom-scrollbar pb-32">
+                        <div
+                            class="group bg-white border border-border-light p-5 rounded-xl transition-all cursor-pointer card-shadow card-glow-neutral relative">
+                            <div class="flex justify-between items-start mb-4">
+                                <div class="flex items-center gap-3">
+                                    <div
+                                        class="w-8 h-8 rounded-full bg-[#FF4500] flex items-center justify-center text-white border border-white/10 shadow-sm">
+                                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                                            <path
+                                                d="M12 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0zm5.01 4.744c.688 0 1.25.561 1.25 1.249a1.25 1.25 0 0 1-2.498.056l-2.597-.547-.8 3.747c1.824.07 3.48.632 4.674 1.488.308-.309.73-.491 1.207-.491.968 0 1.754.786 1.754 1.754 0 .716-.435 1.333-1.056 1.597.04.21.06.427.06.646 0 2.734-3.516 4.952-7.84 4.952-4.323 0-7.84-2.218-7.84-4.952 0-.22.021-.435.06-.646A1.757 1.757 0 0 1 3.33 11.995c0-.968.786-1.754 1.754-1.754.463 0 .88.182 1.185.476 1.162-.845 2.783-1.4 4.567-1.487l.888-4.145 3.33.7c.01-.639.524-1.151 1.152-1.151z">
+                                            </path>
+                                        </svg>
+                                    </div>
+                                    <div>
+                                        <h3 class="text-xs font-bold text-slate-600 uppercase tracking-wide">r/politics
+                                        </h3>
+                                        <p class="text-[10px] text-slate-400 font-mono">15m ago • Thread</p>
+                                    </div>
+                                </div>
+                                <input checked=""
+                                    class="w-5 h-5 rounded border-slate-300 text-slate-600 focus:ring-slate-500 focus:ring-offset-white"
+                                    type="checkbox" />
+                            </div>
+                            <p
+                                class="font-serif text-lg leading-snug mb-4 text-charcoal group-hover:text-vibrant-blue transition-colors">
+                                Megathread: Analysis of the new NATO funding framework and impact on domestic policy.
+                            </p>
+                            <div class="flex items-center justify-between pt-4 border-t border-slate-50">
+                                <div class="flex items-center gap-2">
+                                    <span class="text-[10px] font-bold text-slate-400 uppercase">Signal</span>
+                                    <div class="flex h-1.5 w-16 bg-slate-100 rounded-full overflow-hidden">
+                                        <div class="bg-emerald-500 w-full h-full"></div>
+                                    </div>
+                                </div>
+                                <div class="flex items-center gap-1 text-slate-400">
+                                    <span class="material-symbols-outlined text-sm">forum</span>
+                                    <span class="text-[10px] font-bold">2.4k comments</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div
+                            class="group bg-white border border-border-light p-5 rounded-xl transition-all cursor-pointer card-shadow card-glow-neutral relative">
+                            <div class="flex justify-between items-start mb-4">
+                                <div class="flex items-center gap-3">
+                                    <div
+                                        class="w-8 h-8 rounded-full bg-[#FF4500] flex items-center justify-center text-white border border-white/10 shadow-sm">
+                                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                                            <path
+                                                d="M12 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0zm5.01 4.744c.688 0 1.25.561 1.25 1.249a1.25 1.25 0 0 1-2.498.056l-2.597-.547-.8 3.747c1.824.07 3.48.632 4.674 1.488.308-.309.73-.491 1.207-.491.968 0 1.754.786 1.754 1.754 0 .716-.435 1.333-1.056 1.597.04.21.06.427.06.646 0 2.734-3.516 4.952-7.84 4.952-4.323 0-7.84-2.218-7.84-4.952 0-.22.021-.435.06-.646A1.757 1.757 0 0 1 3.33 11.995c0-.968.786-1.754 1.754-1.754.463 0 .88.182 1.185.476 1.162-.845 2.783-1.4 4.567-1.487l.888-4.145 3.33.7c.01-.639.524-1.151 1.152-1.151z">
+                                            </path>
+                                        </svg>
+                                    </div>
+                                    <div>
+                                        <h3 class="text-xs font-bold text-slate-600 uppercase tracking-wide">r/worldnews
+                                        </h3>
+                                        <p class="text-[10px] text-slate-400 font-mono">1h ago • Discussion</p>
+                                    </div>
+                                </div>
+                                <input checked=""
+                                    class="w-5 h-5 rounded border-slate-300 text-slate-600 focus:ring-slate-500 focus:ring-offset-white"
+                                    type="checkbox" />
+                            </div>
+                            <p
+                                class="font-serif text-lg leading-snug mb-4 text-charcoal group-hover:text-vibrant-blue transition-colors">
+                                Is NATO still relevant? Redditors debate the future of the alliance in a multi-polar
+                                world.</p>
+                            <div class="flex items-center justify-between pt-4 border-t border-slate-50">
+                                <div class="flex items-center gap-2">
+                                    <span class="text-[10px] font-bold text-slate-400 uppercase">Signal</span>
+                                    <div class="flex h-1.5 w-16 bg-slate-100 rounded-full overflow-hidden">
+                                        <div class="bg-vibrant-amber w-3/4 h-full"></div>
+                                    </div>
+                                </div>
+                                <div class="flex items-center gap-1 text-slate-400">
+                                    <span class="material-symbols-outlined text-sm">forum</span>
+                                    <span class="text-[10px] font-bold">1.1k comments</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div
+                    class="flex flex-col h-full overflow-hidden bg-slate-100/50 rounded-t-xl border-x border-t border-border-light">
+                    <div
+                        class="flex items-center gap-4 px-6 py-4 bg-white/80 backdrop-blur border-b border-border-light shrink-0 z-20">
+                        <h2 class="text-xs font-black uppercase tracking-[0.3em] text-vibrant-red">Right-Leaning Outlets
+                        </h2>
+                        <div class="h-px bg-vibrant-red/20 flex-1"></div>
+                        <button
+                            class="text-[10px] font-bold text-slate-400 hover:text-vibrant-red uppercase">All</button>
+                    </div>
+                    <div class="overflow-y-auto flex-1 p-6 space-y-4 custom-scrollbar pb-32">
+                        <div
+                            class="group bg-white border border-border-light p-5 rounded-xl transition-all cursor-pointer card-shadow card-glow-red relative">
+                            <div class="flex justify-between items-start mb-4">
+                                <div class="flex items-center gap-3">
+                                    <div
+                                        class="w-8 h-8 rounded bg-slate-50 flex items-center justify-center font-bold text-[10px] border border-slate-200 text-slate-600">
+                                        FOX</div>
+                                    <div>
+                                        <h3 class="text-xs font-bold text-slate-600 uppercase tracking-wide">Fox News
+                                        </h3>
+                                        <p class="text-[10px] text-slate-400 font-mono">45m ago • Politics</p>
+                                    </div>
+                                </div>
+                                <input checked=""
+                                    class="w-5 h-5 rounded border-slate-300 text-vibrant-red focus:ring-vibrant-red focus:ring-offset-white"
+                                    type="checkbox" />
+                            </div>
+                            <p
+                                class="font-serif text-lg leading-snug mb-4 text-charcoal group-hover:text-vibrant-red transition-colors">
+                                American taxpayers shouldn't foot the bill for Europe's security, say congressional
+                                leaders.</p>
+                            <div class="flex items-center justify-between pt-4 border-t border-slate-50">
+                                <div class="flex items-center gap-2">
+                                    <span class="text-[10px] font-bold text-slate-400 uppercase">Bias</span>
+                                    <div class="flex h-1.5 w-16 bg-slate-100 rounded-full overflow-hidden">
+                                        <div class="bg-vibrant-red ml-auto w-3/4 h-full"></div>
+                                    </div>
+                                </div>
+                                <div class="flex items-center gap-1 text-slate-400">
+                                    <span class="material-symbols-outlined text-sm">visibility</span>
+                                    <span class="text-[10px] font-bold">42.8k</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div
+                            class="group bg-white border border-border-light p-5 rounded-xl transition-all cursor-pointer card-shadow card-glow-red relative">
+                            <div class="flex justify-between items-start mb-4">
+                                <div class="flex items-center gap-3">
+                                    <div
+                                        class="w-8 h-8 rounded bg-slate-50 flex items-center justify-center font-bold text-[10px] border border-slate-200 text-slate-600">
+                                        WSJ</div>
+                                    <div>
+                                        <h3 class="text-xs font-bold text-slate-600 uppercase tracking-wide">Wall St.
+                                            Journal</h3>
+                                        <p class="text-[10px] text-slate-400 font-mono">3h ago • Economics</p>
+                                    </div>
+                                </div>
+                                <input checked=""
+                                    class="w-5 h-5 rounded border-slate-300 text-vibrant-red focus:ring-vibrant-red focus:ring-offset-white"
+                                    type="checkbox" />
+                            </div>
+                            <p
+                                class="font-serif text-lg leading-snug mb-4 text-charcoal group-hover:text-vibrant-red transition-colors">
+                                The fiscal reality of NATO: Balancing domestic debt against international commitments.
+                            </p>
+                            <div class="flex items-center justify-between pt-4 border-t border-slate-50">
+                                <div class="flex items-center gap-2">
+                                    <span class="text-[10px] font-bold text-slate-400 uppercase">Bias</span>
+                                    <div class="flex h-1.5 w-16 bg-slate-100 rounded-full overflow-hidden">
+                                        <div class="bg-vibrant-red ml-auto w-1/4 h-full"></div>
+                                    </div>
+                                </div>
+                                <div class="flex items-center gap-1 text-slate-400">
+                                    <span class="material-symbols-outlined text-sm">visibility</span>
+                                    <span class="text-[10px] font-bold">18.5k</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div
+            class="fixed bottom-0 left-0 right-0 z-50 p-6 bg-white border-t border-border-light shadow-[0_-4px_20px_-5px_rgba(0,0,0,0.1)]">
+            <div class="max-w-[1800px] mx-auto flex items-center justify-between">
+                <div class="flex items-center gap-6">
+                    <div class="hidden md:block">
+                        <p class="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Current Data
+                            Load</p>
+                        <div class="flex gap-1">
+                            <div class="w-1.5 h-1.5 rounded-full bg-vibrant-blue"></div>
+                            <div class="w-1.5 h-1.5 rounded-full bg-vibrant-blue"></div>
+                            <div class="w-1.5 h-1.5 rounded-full bg-vibrant-blue"></div>
+                            <div class="w-1.5 h-1.5 rounded-full bg-vibrant-red"></div>
+                            <div class="w-1.5 h-1.5 rounded-full bg-vibrant-red"></div>
+                            <div class="w-1.5 h-1.5 rounded-full bg-slate-200"></div>
+                            <div class="w-1.5 h-1.5 rounded-full bg-slate-200"></div>
+                        </div>
+                    </div>
+                    <div class="text-sm font-medium text-slate-600">
+                        Sufficient diversity detected for balanced synthesis.
+                    </div>
+                </div>
+                <div class="flex items-center gap-8">
+                    <div class="text-[10px] font-bold text-slate-400 hidden lg:block uppercase tracking-tight">
+                        © 2024 Pulse Analysis Engine. v4.2.0-stable
+                    </div>
+                    <button
+                        class="bg-primary-blue hover:bg-vibrant-blue text-white px-10 py-4 rounded-lg font-bold uppercase tracking-widest text-sm flex items-center gap-3 transition-all shadow-[0_4px_15px_rgba(37,99,235,0.3)] active:scale-95">
+                        Proceed to Synthesis
+                        <span class="material-symbols-outlined text-xl">auto_fix_high</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+</body>
+
+</html>

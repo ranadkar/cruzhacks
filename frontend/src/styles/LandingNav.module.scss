@@ -92,6 +92,12 @@
   }
 }
 
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
 .mobileMenuButton {
   display: block;
   color: #020617;
@@ -101,5 +107,33 @@
 
   @media (min-width: 768px) {
     display: none;
+  }
+}
+
+// Dark mode
+:global([data-theme='dark']) {
+  .header {
+    background-color: rgba(15, 23, 42, 0.9);
+    border-bottom-color: #334155;
+  }
+
+  .logoIcon {
+    background-color: #3B82F6;
+  }
+
+  .logoText {
+    color: white;
+  }
+
+  .navLink {
+    color: #cbd5e1;
+
+    &:hover {
+      color: #3B82F6;
+    }
+  }
+
+  .mobileMenuButton {
+    color: white;
   }
 }

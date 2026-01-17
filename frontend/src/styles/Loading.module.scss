@@ -1,0 +1,609 @@
+@use './vars' as *;
+
+$paper: #FAF9F6;
+$charcoal: #0F172A;
+$charcoal-dark: #020617;
+$charcoal-muted: #334155;
+$primary-blue: #2563EB;
+$editorial-blue: #3B82F6;
+$editorial-red: #EF4444;
+
+.loading {
+    font-family: 'Manrope', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+    background-color: $charcoal;
+    color: white;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+}
+
+// Animated gradient background
+.gradientBg {
+    position: absolute;
+    inset: 0;
+    background-image:
+        radial-gradient(at 20% 30%, rgba(59, 130, 246, 0.2) 0px, transparent 50%),
+        radial-gradient(at 80% 70%, rgba(239, 68, 68, 0.2) 0px, transparent 50%),
+        radial-gradient(at 50% 50%, rgba(37, 99, 235, 0.1) 0px, transparent 60%);
+    animation: gradientShift 8s ease-in-out infinite;
+}
+
+@keyframes gradientShift {
+
+    0%,
+    100% {
+        background-image:
+            radial-gradient(at 20% 30%, rgba(59, 130, 246, 0.2) 0px, transparent 50%),
+            radial-gradient(at 80% 70%, rgba(239, 68, 68, 0.2) 0px, transparent 50%),
+            radial-gradient(at 50% 50%, rgba(37, 99, 235, 0.1) 0px, transparent 60%);
+    }
+
+    50% {
+        background-image:
+            radial-gradient(at 30% 40%, rgba(59, 130, 246, 0.25) 0px, transparent 50%),
+            radial-gradient(at 70% 60%, rgba(239, 68, 68, 0.25) 0px, transparent 50%),
+            radial-gradient(at 50% 50%, rgba(37, 99, 235, 0.15) 0px, transparent 60%);
+    }
+}
+
+// Grid overlay
+.gridBg {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background-image:
+        linear-gradient(to right, rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+    background-size: 40px 40px;
+}
+
+// Main content container
+.content {
+    position: relative;
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 1rem;
+    width: 100%;
+    max-width: 800px;
+    margin: 0 auto;
+
+    @media (min-width: 1024px) {
+        max-width: 1000px;
+        padding: 2rem;
+    }
+}
+
+.visualSection {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.5rem;
+    width: 100%;
+    margin-bottom: 2rem;
+
+    @media (min-width: 1024px) {
+        flex-direction: row;
+        justify-content: center;
+        align-items: center;
+        gap: 3rem;
+        margin-bottom: 2.5rem;
+    }
+}
+
+// Network visualization
+.networkContainer {
+    position: relative;
+    width: 280px;
+    height: 280px;
+    flex-shrink: 0;
+
+    @media (min-width: 768px) {
+        width: 320px;
+        height: 320px;
+    }
+
+    @media (min-width: 1024px) {
+        width: 380px;
+        height: 380px;
+    }
+}
+
+.networkSvg {
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+}
+
+// Animated orbits
+.orbit {
+    fill: none;
+    stroke-width: 1;
+    stroke-dasharray: 8 4;
+}
+
+.orbitOuter {
+    stroke: rgba(255, 255, 255, 0.1);
+    animation: orbitRotate 30s linear infinite;
+}
+
+.orbitMiddle {
+    stroke: rgba(255, 255, 255, 0.08);
+    animation: orbitRotate 20s linear infinite reverse;
+}
+
+.orbitInner {
+    stroke: rgba(255, 255, 255, 0.06);
+    animation: orbitRotate 15s linear infinite;
+}
+
+@keyframes orbitRotate {
+    from {
+        transform: rotate(0deg);
+        transform-origin: center;
+    }
+
+    to {
+        transform: rotate(360deg);
+        transform-origin: center;
+    }
+}
+
+// Data nodes
+.nodeGroup {
+    animation: nodeFloat 4s ease-in-out infinite;
+}
+
+.nodeBlue {
+    fill: $editorial-blue;
+    filter: drop-shadow(0 0 8px rgba(59, 130, 246, 0.6));
+    animation: nodePulse 2s ease-in-out infinite;
+}
+
+.nodeRed {
+    fill: $editorial-red;
+    filter: drop-shadow(0 0 8px rgba(239, 68, 68, 0.6));
+    animation: nodePulse 2s ease-in-out infinite 0.5s;
+}
+
+.nodeNeutral {
+    fill: rgba(255, 255, 255, 0.8);
+    filter: drop-shadow(0 0 6px rgba(255, 255, 255, 0.4));
+    animation: nodePulse 2s ease-in-out infinite 1s;
+}
+
+@keyframes nodePulse {
+
+    0%,
+    100% {
+        opacity: 0.7;
+        transform: scale(1);
+    }
+
+    50% {
+        opacity: 1;
+        transform: scale(1.2);
+    }
+}
+
+@keyframes nodeFloat {
+
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+
+    50% {
+        transform: translateY(-5px);
+    }
+}
+
+// Connection lines
+.connectionLine {
+    stroke: rgba(255, 255, 255, 0.15);
+    stroke-width: 1;
+    stroke-dasharray: 100;
+    stroke-dashoffset: 100;
+    animation: drawLine 2s ease-out forwards;
+}
+
+.connectionLineBlue {
+    stroke: rgba(59, 130, 246, 0.3);
+    animation: drawLine 2s ease-out forwards, pulseLine 3s ease-in-out infinite 2s;
+}
+
+.connectionLineRed {
+    stroke: rgba(239, 68, 68, 0.3);
+    animation: drawLine 2.5s ease-out forwards, pulseLine 3s ease-in-out infinite 2.5s;
+}
+
+@keyframes drawLine {
+    to {
+        stroke-dashoffset: 0;
+    }
+}
+
+@keyframes pulseLine {
+
+    0%,
+    100% {
+        opacity: 0.3;
+    }
+
+    50% {
+        opacity: 0.8;
+    }
+}
+
+// Center core
+.centerCore {
+    fill: $charcoal-dark;
+    stroke: $primary-blue;
+    stroke-width: 2;
+    filter: drop-shadow(0 0 20px rgba(37, 99, 235, 0.5));
+}
+
+.centerGlow {
+    fill: $primary-blue;
+    opacity: 0.2;
+    animation: coreGlow 3s ease-in-out infinite;
+}
+
+@keyframes coreGlow {
+
+    0%,
+    100% {
+        opacity: 0.2;
+        r: 35;
+    }
+
+    50% {
+        opacity: 0.4;
+        r: 45;
+    }
+}
+
+.centerIcon {
+    fill: white;
+    font-size: 24px;
+}
+
+// Processing ring
+.processingRing {
+    fill: none;
+    stroke: $primary-blue;
+    stroke-width: 3;
+    stroke-linecap: round;
+    stroke-dasharray: 180 360;
+    animation: processingRotate 1.5s linear infinite;
+    transform-origin: center;
+}
+
+@keyframes processingRotate {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+// Status badge
+.statusBadge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.4rem 1rem;
+    border-radius: 9999px;
+    background-color: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(8px);
+    margin-bottom: 1rem;
+}
+
+.statusDot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background-color: $primary-blue;
+    animation: statusPulse 1.5s ease-in-out infinite;
+}
+
+@keyframes statusPulse {
+
+    0%,
+    100% {
+        box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.6);
+    }
+
+    50% {
+        box-shadow: 0 0 0 6px rgba(37, 99, 235, 0);
+    }
+}
+
+.statusText {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    color: rgba(255, 255, 255, 0.8);
+}
+
+// Title
+.title {
+    font-family: 'Lora', serif;
+    font-size: 1.5rem;
+    font-weight: 500;
+    margin-bottom: 0.5rem;
+    color: white;
+
+    @media (min-width: 768px) {
+        font-size: 2rem;
+    }
+}
+
+.queryText {
+    font-style: italic;
+    color: rgba(255, 255, 255, 0.7);
+}
+
+// Subtitle
+.subtitle {
+    font-size: 0.9rem;
+    color: #94a3b8;
+    margin-bottom: 1.5rem;
+    max-width: 500px;
+    line-height: 1.5;
+
+    @media (min-width: 768px) {
+        margin-bottom: 2rem;
+    }
+}
+
+// Progress stages
+.stages {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    width: 100%;
+    max-width: 360px;
+}
+
+.stage {
+    display: flex;
+    align-items: center;
+    gap: 0.875rem;
+    padding: 0.75rem 1rem;
+    background-color: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 0.625rem;
+    transition: all 0.3s ease;
+}
+
+.stageActive {
+    background-color: rgba(37, 99, 235, 0.1);
+    border-color: rgba(37, 99, 235, 0.3);
+
+    .stageIcon {
+        background-color: $primary-blue;
+        color: white;
+        animation: iconPulse 1s ease-in-out infinite;
+    }
+
+    .stageLabel {
+        color: white;
+    }
+}
+
+.stageComplete {
+    background-color: rgba(16, 185, 129, 0.1);
+    border-color: rgba(16, 185, 129, 0.3);
+
+    .stageIcon {
+        background-color: #10b981;
+        color: white;
+    }
+
+    .stageLabel {
+        color: #34d399;
+    }
+}
+
+@keyframes iconPulse {
+
+    0%,
+    100% {
+        transform: scale(1);
+    }
+
+    50% {
+        transform: scale(1.1);
+    }
+}
+
+.stageIcon {
+    width: 2rem;
+    height: 2rem;
+    border-radius: 0.4rem;
+    background-color: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: rgba(255, 255, 255, 0.5);
+    transition: all 0.3s ease;
+
+    span {
+        font-size: 1.125rem;
+    }
+}
+
+.stageContent {
+    flex: 1;
+    text-align: left;
+}
+
+.stageLabel {
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.5);
+    transition: color 0.3s ease;
+}
+
+.stageSource {
+    font-size: 0.6875rem;
+    font-family: monospace;
+    color: rgba(255, 255, 255, 0.3);
+    margin-top: 0.125rem;
+}
+
+// Node tags at bottom
+.nodeTags {
+    display: flex;
+    gap: 0.75rem;
+    margin-top: 1rem;
+}
+
+.nodeTag {
+    padding: 0.375rem 1rem;
+    border-radius: 4px;
+    font-family: monospace;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    animation: tagFlicker 3s ease-in-out infinite;
+}
+
+.nodeTagBlue {
+    background-color: rgba(59, 130, 246, 0.2);
+    color: #93c5fd;
+    border: 1px solid rgba(59, 130, 246, 0.3);
+    animation-delay: 0s;
+}
+
+.nodeTagRed {
+    background-color: rgba(239, 68, 68, 0.2);
+    color: #fca5a5;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    animation-delay: 0.5s;
+}
+
+@keyframes tagFlicker {
+
+    0%,
+    100% {
+        opacity: 0.7;
+    }
+
+    50% {
+        opacity: 1;
+    }
+}
+
+// Floating particles
+.particles {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    pointer-events: none;
+}
+
+.particle {
+    position: absolute;
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    animation: particleFloat 10s linear infinite;
+}
+
+.particleBlue {
+    background-color: rgba(59, 130, 246, 0.5);
+    box-shadow: 0 0 10px rgba(59, 130, 246, 0.3);
+}
+
+.particleRed {
+    background-color: rgba(239, 68, 68, 0.5);
+    box-shadow: 0 0 10px rgba(239, 68, 68, 0.3);
+}
+
+@keyframes particleFloat {
+    0% {
+        transform: translateY(100vh) scale(0);
+        opacity: 0;
+    }
+
+    10% {
+        opacity: 1;
+    }
+
+    90% {
+        opacity: 1;
+    }
+
+    100% {
+        transform: translateY(-100vh) scale(1);
+        opacity: 0;
+    }
+}
+
+// Error state
+.errorContainer {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.5rem;
+    padding: 2rem;
+    background-color: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    border-radius: 1rem;
+    max-width: 400px;
+}
+
+.errorIcon {
+    width: 4rem;
+    height: 4rem;
+    border-radius: 50%;
+    background-color: rgba(239, 68, 68, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: $editorial-red;
+
+    span {
+        font-size: 2rem;
+    }
+}
+
+.errorMessage {
+    font-size: 0.875rem;
+    color: #fca5a5;
+    text-align: center;
+    line-height: 1.6;
+}
+
+.retryButton {
+    padding: 0.75rem 2rem;
+    background-color: $editorial-red;
+    color: white;
+    border: none;
+    border-radius: 0.5rem;
+    font-weight: 700;
+    font-size: 0.875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    cursor: pointer;
+    transition: all 0.2s;
+
+    &:hover {
+        background-color: #dc2626;
+        transform: translateY(-2px);
+    }
+}

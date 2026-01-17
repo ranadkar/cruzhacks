@@ -1,7 +1,24 @@
+import type { FormEvent } from 'react';
+import { useNavigate } from 'react-router-dom';
 import LandingNav from '../components/LandingNav';
+import { useAppDispatch, useAppSelector } from '../lib/store';
+import { runSearch, setQuery } from '../lib/searchSlice';
 import styles from '../styles/Landing.module.scss';
 
 const Landing = () => {
+  const navigate = useNavigate();
+  const dispatch = useAppDispatch();
+  const { query, status } = useAppSelector((state) => state.search);
+  const isLoading = status === 'loading';
+
+  const handleSubmit = (e: FormEvent) => {
+    e.preventDefault();
+    if (query.trim()) {
+      dispatch(runSearch(query));
+      navigate('/loading');
+    }
+  };
+
   return (
     <div className={styles.landing}>
       <LandingNav />
@@ -22,7 +39,7 @@ const Landing = () => {
               Comparative linguistics and cluster analysis to decode political discourse, stripping away rhetoric to reveal core disagreements and shared realities.
             </p>
             <div className={styles.searchBox}>
-              <form className={styles.searchForm}>
+              <form className={styles.searchForm} onSubmit={handleSubmit}>
                 <div className={styles.searchInputWrapper}>
                   <div className={styles.searchIcon}>
                     <span className="material-symbols-outlined">search</span>
@@ -31,10 +48,18 @@ const Landing = () => {
                     className={styles.searchInput}
                     placeholder="Enter a topic (e.g. NATO Funding, Tax Policy)"
                     type="text"
+                    value={query}
+                    onChange={(e) => dispatch(setQuery(e.target.value))}
                   />
                 </div>
-                <button className={styles.searchButton} type="button">
-                  <span className={styles.searchButtonText}>Analyze Discussion</span>
+                <button
+                  className={styles.searchButton}
+                  type="submit"
+                  disabled={isLoading || !query.trim()}
+                >
+                  <span className={styles.searchButtonText}>
+                    {isLoading ? 'Analyzing...' : 'Analyze Discussion'}
+                  </span>
                   <span className="material-symbols-outlined">analytics</span>
                 </button>
               </form>
