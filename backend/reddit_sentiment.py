@@ -188,4 +188,3 @@ async def search_posts_fast():
 
 if __name__ == "__main__":
     asyncio.run(search_posts_fast())
-
