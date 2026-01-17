@@ -15,6 +15,12 @@ from reddit_sentiment import search_reddit
 from bluesky import search_bluesky
 from scrapers.cnn import fetch_cnn
 from scrapers.fox import fetch_fox
+from scrapers.cbs import fetch_cbs
+from scrapers.nbc import fetch_nbc
+from scrapers.abc import fetch_abc
+from scrapers.breitbart import fetch_breitbart
+from scrapers.nypost import fetch_nypost
+from scrapers.oann import fetch_oann
 from search_news import search_news
 from atproto import AsyncClient
 
