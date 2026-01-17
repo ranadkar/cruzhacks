@@ -2,13 +2,11 @@ import os
 from dotenv import load_dotenv
 import asyncpraw
 import asyncio
-from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
 
 load_dotenv()
 app_id = os.getenv("REDDIT_CLIENT_ID")
 client_secret = os.getenv("REDDIT_CLIENT_SECRET")
 reddit_user_agent = os.getenv("REDDIT_USER_AGENT")
-analyzer = SentimentIntensityAnalyzer()
 
 
 async def search_reddit(reddit, query: str, subreddit_name: str = "all", limit: int = 50):
@@ -19,20 +17,17 @@ async def search_reddit(reddit, query: str, subreddit_name: str = "all", limit: 
     
     subreddit = await reddit.subreddit(subreddit_name)
     # Fetch more posts to account for filtered link posts
-    async for submission in subreddit.search(query, limit=limit * 3, sort="relevance"):
+    async for submission in subreddit.search(query, limit=limit * 3, sort="hot"):
         # Skip link posts (posts without text content)
         if not submission.selftext:
             continue
-            
-        text_content = submission.title + " " + submission.selftext
-        sentiment_scores = analyzer.polarity_scores(text_content)
-        compound_score = sentiment_scores["compound"]
-
-        sentiment_category = (
-            "positive" if compound_score >= 0.05 
-            else "negative" if compound_score <= -0.05 
-            else "neutral"
-        )
+        
+        # if submission.score < 2 or submission.num_comments < 2:
+        #     continue
+        
+        # Skip posts with less than 100 characters of content
+        if len(submission.selftext) < 100:
+            continue
 
         posts.append({
             "source": "Reddit",
@@ -41,8 +36,6 @@ async def search_reddit(reddit, query: str, subreddit_name: str = "all", limit: 
             "author": f"u/{submission.author.name}" if submission.author else "u/[deleted]",
             "contents": submission.selftext[:500],
             "date": submission.created_utc,
-            "sentiment": sentiment_category,
-            "sentiment_score": compound_score,
             "score": submission.score,
             "num_comments": submission.num_comments,
             "url": f"https://reddit.com{submission.permalink}",
