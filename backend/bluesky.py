@@ -13,179 +13,106 @@ bluesky_password = os.getenv("BLUESKY_APP_PASSWORD")
 analyzer = SentimentIntensityAnalyzer()
 
 
-def get_async_client():
-    """Create and return an async Bluesky client."""
-    return AsyncClient()
+async def search_bluesky(client, query: str, sort: str = "latest", limit: int = 50):
+    if not query:
+        return None
 
+    if sort not in ["latest", "top"]:
+        sort = "latest"
 
-async def get_bluesky_search_data(query: str, limit: int = 50, sort: str = "latest"):
-    """Fetch Bluesky posts with sentiment analysis for any search query."""
-    client = get_async_client()
+    limit = min(limit, 100)
     posts = []
 
-    try:
-        # Login to Bluesky
-        await client.login(bluesky_handle, bluesky_password)
+    # Search for posts
+    response = await client.app.bsky.feed.search_posts(
+        {"q": query, "limit": limit, "sort": sort}
+    )
 
-        # Search for posts
-        response = await client.app.bsky.feed.search_posts(
-            {"q": query, "limit": min(limit, 100), "sort": sort}
+    for post in response.posts[:limit]:
+        text_content = post.record.text if hasattr(post.record, "text") else ""
+        sentiment_scores = analyzer.polarity_scores(text_content)
+        compound_score = sentiment_scores["compound"]
+
+        sentiment_category = (
+            "positive" if compound_score >= 0.05 
+            else "negative" if compound_score <= -0.05 
+            else "neutral"
         )
 
-        for post in response.posts[:limit]:
-            # Extract text content
-            text_content = post.record.text if hasattr(post.record, "text") else ""
+        author_handle = post.author.handle if hasattr(post.author, "handle") else "unknown"
+        author_display = post.author.display_name if hasattr(post.author, "display_name") else author_handle
 
-            # Perform sentiment analysis
-            sentiment_scores = analyzer.polarity_scores(text_content)
-            compound_score = sentiment_scores["compound"]
+        post_uri_parts = post.uri.split("/")
+        post_id = post_uri_parts[-1] if len(post_uri_parts) > 0 else ""
+        post_url = f"https://bsky.app/profile/{author_handle}/post/{post_id}"
 
-            if compound_score >= 0.05:
-                sentiment_category = "positive"
-            elif compound_score <= -0.05:
-                sentiment_category = "negative"
-            else:
-                sentiment_category = "neutral"
-
-            # Extract author information
-            author_handle = post.author.handle if hasattr(post.author, "handle") else "unknown"
-            author_display = (
-                post.author.display_name
-                if hasattr(post.author, "display_name")
-                else author_handle
-            )
-
-            # Build post URL
-            post_uri_parts = post.uri.split("/")
-            post_id = post_uri_parts[-1] if len(post_uri_parts) > 0 else ""
-            post_url = f"https://bsky.app/profile/{author_handle}/post/{post_id}"
-
-            posts.append(
-                {
-                    "source": "Bluesky",
-                    "id": post_id,
-                    "uri": post.uri,
-                    "title": text_content[:100] + "..." if len(text_content) > 100 else text_content,
-                    "username": f"@{author_handle}",
-                    "handle": author_handle,
-                    "display_name": author_display,
-                    "contents": text_content,
-                    "platform": "bluesky",
-                    "date": post.record.created_at if hasattr(post.record, "created_at") else "",
-                    "created_at": post.record.created_at if hasattr(post.record, "created_at") else "",
-                    "sentiment": sentiment_category,
-                    "sentiment_score": compound_score,
-                    "likes": post.like_count,
-                    "reposts": post.repost_count,
-                    "replies": post.reply_count,
-                    "quotes": post.quote_count if hasattr(post, "quote_count") else 0,
-                    "bookmarks": post.bookmark_count if hasattr(post, "bookmark_count") else 0,
-                    "url": post_url,
-                    "ai_summary": f"{sentiment_category.title()} sentiment post: {text_content[:50]}...",
-                }
-            )
-    except Exception as e:
-        print(f"Error fetching Bluesky data: {e}")
-        import traceback
-        traceback.print_exc()
-
-    return posts
-
-
-async def categorize_overall_sentiment(query: str, limit: int = 50, sort: str = "latest"):
-    """Get overall sentiment analysis for a search query on Bluesky."""
-    posts = await get_bluesky_search_data(query, limit, sort)
+        posts.append({
+            "source": "Bluesky",
+            "id": post_id,
+            "uri": post.uri,
+            "title": text_content[:100] + "..." if len(text_content) > 100 else text_content,
+            "username": f"@{author_handle}",
+            "handle": author_handle,
+            "display_name": author_display,
+            "contents": text_content,
+            "platform": "bluesky",
+            "date": post.record.created_at if hasattr(post.record, "created_at") else "",
+            "created_at": post.record.created_at if hasattr(post.record, "created_at") else "",
+            "sentiment": sentiment_category,
+            "sentiment_score": compound_score,
+            "likes": post.like_count,
+            "reposts": post.repost_count,
+            "replies": post.reply_count,
+            "quotes": post.quote_count if hasattr(post, "quote_count") else 0,
+            "bookmarks": post.bookmark_count if hasattr(post, "bookmark_count") else 0,
+            "url": post_url,
+        })
 
     if not posts:
-        return {
-            "sentiment": "No sentiment data available",
-            "score": 0.0,
-            "post_count": 0,
-            "posts": [],
-        }
+        return None
 
-    sentiment_scores = [post["sentiment_score"] for post in posts]
-    avg_sentiment = sum(sentiment_scores) / len(sentiment_scores)
+    # Calculate overall sentiment
+    avg_score = sum(p["sentiment_score"] for p in posts) / len(posts)
+    overall_sentiment = (
+        "Positive sentiment" if avg_score >= 0.05 
+        else "Negative sentiment" if avg_score <= -0.05 
+        else "Neutral sentiment"
+    )
 
-    if avg_sentiment >= 0.05:
-        category = "Positive sentiment"
-    elif avg_sentiment <= -0.05:
-        category = "Negative sentiment"
-    else:
-        category = "Neutral sentiment"
-
-    return {
-        "sentiment": category,
-        "score": avg_sentiment,
+    # Save results
+    output_file = f"sentiment_analysis_bluesky_{query.replace(' ', '_')}_{len(posts)}.json"
+    result = {
+        "query": query,
+        "platform": "bluesky",
+        "sort": sort,
+        "overall_sentiment": overall_sentiment,
+        "average_score": avg_score,
         "post_count": len(posts),
         "posts": posts,
+        "timestamp": time.time(),
     }
-
-
-async def search_posts_fast(query: str, sort: str = "latest", limit: int = 50):
-    """Fast sentiment-analyzed Bluesky search with instant results.
     
-    Args:
-        query: Search query string
-        sort: Sort order - "latest" or "top" (default: "latest")
-        limit: Number of posts to retrieve, max 100 (default: 50)
-    """
-    try:
-        if not query:
-            print("No query provided. Exiting.")
-            return
+    with open(output_file, "w", encoding="utf-8") as f:
+        json.dump(result, f, indent=2, ensure_ascii=False)
 
-        if sort not in ["latest", "top"]:
-            print(f"Invalid sort option '{sort}', using 'latest'")
-            sort = "latest"
-
-        limit = min(limit, 100)
-
-        start_time = time.time()
-
-        # Get posts with sentiment analysis
-        result = await categorize_overall_sentiment(query, limit, sort)
-        posts = result["posts"]
-
-        elapsed = time.time() - start_time
-
-        if not posts:
-            print("No results found.")
-            return
-
-        # Save results
-        output_file = f"sentiment_analysis_bluesky_{query.replace(' ', '_')}_{len(posts)}.json"
-        with open(output_file, "w", encoding="utf-8") as f:
-            json.dump(
-                {
-                    "query": query,
-                    "platform": "bluesky",
-                    "sort": sort,
-                    "overall_sentiment": result["sentiment"],
-                    "average_score": result["score"],
-                    "post_count": result["post_count"],
-                    "posts": posts,
-                    "timestamp": time.time(),
-                },
-                f,
-                indent=2,
-                ensure_ascii=False,
-            )
-
-        print(f"Analysis complete. Saved to: {output_file}")
-
-    except Exception as e:
-        print(f"Error: {e}")
-        import traceback
-        traceback.print_exc()
+    print(f"Analysis complete. Saved to: {output_file}")
+    return result
 
 
 if __name__ == "__main__":
     import sys
     
-    # Get parameters from command line or use defaults
-    query = sys.argv[1] if len(sys.argv) > 1 else input("Enter your search query: ").strip()
-    sort = sys.argv[2] if len(sys.argv) > 2 else (input("Sort by (latest/top, default: latest): ").strip() or "latest")
-    limit = int(sys.argv[3]) if len(sys.argv) > 3 else (int(input("How many posts to retrieve? (default: 50, max: 100): ").strip() or "50"))
+    async def main():
+        query = sys.argv[1] if len(sys.argv) > 1 else input("Enter your search query: ").strip()
+        sort = sys.argv[2] if len(sys.argv) > 2 else (input("Sort by (latest/top, default: latest): ").strip() or "latest")
+        limit = int(sys.argv[3]) if len(sys.argv) > 3 else (int(input("How many posts to retrieve? (default: 50, max: 100): ").strip() or "50"))
+        
+        client = AsyncClient()
+        await client.login(bluesky_handle, bluesky_password)
+        
+        try:
+            await search_bluesky(client, query, sort, limit)
+        finally:
+            pass
     
-    asyncio.run(search_posts_fast(query, sort, limit))
+    asyncio.run(main())
