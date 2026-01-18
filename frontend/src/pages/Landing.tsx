@@ -221,7 +221,7 @@ const Landing = () => {
                     </div>
                     <div className={styles.challengeArrow}>
                       <div className={`${styles.challengeArrowLine} ${styles.challengeArrowLineTop}`}></div>
-                      <div className={styles.challengeArrowLabel}>Pulse Verification</div>
+                      <div className={styles.challengeArrowLabel}>Polaryx Verification</div>
                       <div className={`${styles.challengeArrowLine} ${styles.challengeArrowLineBottom}`}></div>
                     </div>
                     <div className={styles.challengeRow}>
@@ -242,7 +242,7 @@ const Landing = () => {
                 </div>
                 <h2 className={styles.sectionTitle}>Combating Misinformation</h2>
                 <p className={styles.sectionDescription}>
-                  Pulse acts as a citation-backed buffer. We don't just "flag" content; we provide an immediate, verifiable record from non-partisan sources like the CBO, BLS, and academic archives.
+                  Polaryx acts as a citation-backed buffer. We don't just "flag" content; we provide an immediate, verifiable record from non-partisan sources like the CBO, BLS, and academic archives.
                 </p>
                 {/* <button className={styles.viewProtocolButton}>
                   View Verification Protocol
@@ -296,7 +296,7 @@ const Landing = () => {
                 </div>
                 <h3 className={styles.synthesisCardTitle}>Strategic Reframing</h3>
                 <p className={styles.synthesisCardDesc}>
-                  Pulse suggests alternative linguistic framings that respect the core values of the opposing side, facilitating more productive dialogue.
+                  Polaryx suggests alternative linguistic framings that respect the core values of the opposing side, facilitating more productive dialogue.
                 </p>
               </div>
             </div>

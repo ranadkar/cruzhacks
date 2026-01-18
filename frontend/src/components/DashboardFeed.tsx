@@ -1,7 +1,7 @@
 import { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppSelector } from '../lib/store';
-import { fetchSummary, type SearchResult, type SummaryResult } from '../lib/search';
+import { fetchSummary, type SearchResult, type SummaryResult } from '../lib/services';
 import ThemeToggle from './ThemeToggle';
 import styles from '../styles/Dashboard.module.scss';
 
@@ -228,6 +228,7 @@ const DashboardFeed = () => {
     }, [selectedResults, results, navigate]);
 
     // Fetch summaries for all selected sources
+    const sessionId = useAppSelector((state) => state.search.sessionId);
     useEffect(() => {
         const fetchAllSummaries = async () => {
             for (const result of selectedResults) {
@@ -238,7 +239,7 @@ const DashboardFeed = () => {
                 setLoadingUrls(prev => new Set(prev).add(result.url));
 
                 try {
-                    const summary = await fetchSummary(result.url);
+                    const summary = await fetchSummary(result.url, sessionId ?? '');
                     setSummaries(prev => new Map(prev).set(result.url, summary));
                 } catch (error) {
                     console.error(`Failed to fetch summary for ${result.url}:`, error);
@@ -254,7 +255,7 @@ const DashboardFeed = () => {
         };
 
         fetchAllSummaries();
-    }, [selectedResults, summaries, loadingUrls, failedUrls]);
+    }, [selectedResults, summaries, loadingUrls, failedUrls, sessionId]);
 
     // Categorize selected results
     const categorizedResults = useMemo(() => {

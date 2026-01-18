@@ -31,10 +31,15 @@ export interface SearchResult {
     ai_summary?: string;
 }
 
-export async function fetchSearchResults(query: string): Promise<SearchResult[]> {
+export interface SearchResponse {
+    session_id: string;
+    results: SearchResult[];
+}
+
+export async function fetchSearchResults(query: string): Promise<SearchResponse> {
     const trimmed = query.trim();
     if (!trimmed) {
-        return [];
+        return { session_id: '', results: [] };
     }
 
     const response = await fetch(`${API_BASE_URL}/search?q=${encodeURIComponent(trimmed)}`);
@@ -43,7 +48,7 @@ export async function fetchSearchResults(query: string): Promise<SearchResult[]>
         throw new Error(`Search failed with status ${response.status}`);
     }
 
-    return response.json() as Promise<SearchResult[]>;
+    return response.json() as Promise<SearchResponse>;
 }
 
 export interface SummaryResult {
@@ -53,8 +58,12 @@ export interface SummaryResult {
     summary: string;
 }
 
-export async function fetchSummary(url: string): Promise<SummaryResult> {
-    const response = await fetch(`${API_BASE_URL}/summary?url=${encodeURIComponent(url)}`);
+export async function fetchSummary(url: string, sessionId: string): Promise<SummaryResult> {
+    const params = new URLSearchParams({
+        url,
+        session_id: sessionId,
+    });
+    const response = await fetch(`${API_BASE_URL}/summary?${params}`);
 
     if (!response.ok) {
         throw new Error(`Summary fetch failed with status ${response.status}`);
@@ -79,14 +88,14 @@ export interface ArticleForInsights {
     bias: string;
 }
 
-export async function fetchInsights(articles: ArticleForInsights[]): Promise<InsightsResult> {
+export async function fetchInsights(articles: ArticleForInsights[], sessionId: string): Promise<InsightsResult> {
     // Pass articles directly as [{url, bias}, ...] format
     const response = await fetch(`${API_BASE_URL}/insights`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
         },
-        body: JSON.stringify(articles),
+        body: JSON.stringify({ session_id: sessionId, articles: articles }),
     });
 
     if (!response.ok) {

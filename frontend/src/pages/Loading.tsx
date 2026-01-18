@@ -4,9 +4,9 @@ import { useAppSelector } from '../lib/store';
 import styles from '../styles/Loading.module.scss';
 
 const stages = [
-    { id: 'reddit', label: 'Scanning Reddit', icon: 'forum', source: 'r/politics, r/conservative, r/news' },
+    { id: 'reddit', label: 'Scanning Reddit', icon: 'forum', source: 'r/politics, r/debate, r/news, etc' },
     { id: 'bluesky', label: 'Analyzing Bluesky', icon: 'tag', source: 'trending hashtags & threads' },
-    { id: 'news', label: 'Processing News', icon: 'newspaper', source: 'Reuters, AP, NewsAPI' },
+    { id: 'news', label: 'Processing News', icon: 'newspaper', source: 'CNN, Fox, NBC, etc' },
     { id: 'synthesis', label: 'Synthesizing Data', icon: 'hub', source: 'cross-referencing sources' },
 ];
 

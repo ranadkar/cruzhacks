@@ -2,7 +2,7 @@ import { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppSelector, useAppDispatch } from '../lib/store';
 import { setSelectedIndices, runInsights } from '../lib/searchSlice';
-import type { SearchResult, ArticleForInsights } from '../lib/search';
+import type { SearchResult, ArticleForInsights } from '../lib/services';
 import ThemeToggle from '../components/ThemeToggle';
 import styles from '../styles/SelectSources.module.scss';
 

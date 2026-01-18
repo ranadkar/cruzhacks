@@ -1,8 +1,10 @@
 import { createAsyncThunk, createSlice, type PayloadAction } from '@reduxjs/toolkit';
-import { fetchSearchResults, fetchInsights, type SearchResult, type InsightsResult, type ArticleForInsights, type SummaryResult } from './search';
+import { fetchSearchResults, fetchInsights, type SearchResult, type SearchResponse, type InsightsResult, type ArticleForInsights, type SummaryResult } from './services';
+import type { RootState } from './store';
 
 interface SearchState {
     query: string;
+    sessionId: string | null;
     results: SearchResult[];
     selectedIndices: number[];
     insights: InsightsResult | null;
@@ -15,6 +17,7 @@ interface SearchState {
 
 const initialState: SearchState = {
     query: '',
+    sessionId: null,
     results: [],
     selectedIndices: [],
     insights: null,
@@ -26,7 +29,7 @@ const initialState: SearchState = {
 };
 
 export const runSearch = createAsyncThunk<
-    SearchResult[],
+    SearchResponse,
     string,
     { rejectValue: string }
 >('search/runSearch', async (query, { rejectWithValue }) => {
@@ -41,10 +44,11 @@ export const runSearch = createAsyncThunk<
 export const runInsights = createAsyncThunk<
     InsightsResult,
     ArticleForInsights[],
-    { rejectValue: string }
->('search/runInsights', async (articles, { rejectWithValue }) => {
+    { rejectValue: string; state: RootState }
+>('search/runInsights', async (articles, { rejectWithValue, getState }) => {
     try {
-        return await fetchInsights(articles);
+        const sessionId = getState().search.sessionId ?? '';
+        return await fetchInsights(articles, sessionId);
     } catch (err) {
         const message = err instanceof Error ? err.message : 'Insights request failed';
         return rejectWithValue(message);
@@ -73,6 +77,7 @@ const searchSlice = createSlice({
             state.insightsStatus = 'idle';
             state.error = null;
             state.insightsError = null;
+            // Note: sessionId is preserved across searches within the same session
         },
     },
     extraReducers: (builder) => {
@@ -84,7 +89,8 @@ const searchSlice = createSlice({
             })
             .addCase(runSearch.fulfilled, (state, action) => {
                 state.status = 'succeeded';
-                state.results = action.payload;
+                state.sessionId = action.payload.session_id;
+                state.results = action.payload.results;
             })
             .addCase(runSearch.rejected, (state, action) => {
                 state.status = 'failed';

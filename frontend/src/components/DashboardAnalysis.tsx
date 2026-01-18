@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { useAppSelector } from '../lib/store';
-import type { SearchResult } from '../lib/search';
+import type { SearchResult } from '../lib/services';
+import SentimentTimeline from './SentimentTimeline';
 import styles from '../styles/Dashboard.module.scss';
 
 // Categorize sources
@@ -190,6 +191,7 @@ ${divider}
                 </div>
             </div>
 
+
             {/* Sentiment Cards Grid */}
             <div className={styles.sentimentGrid}>
                 {/* Conservative/Right Card */}
@@ -304,6 +306,8 @@ ${divider}
                     </div>
                 </div>
             </div>
+            {/* Sentiment Timeline Chart */}
+            <SentimentTimeline />
 
             {/* Common Ground Section */}
             <div className={styles.commonGroundSection}>

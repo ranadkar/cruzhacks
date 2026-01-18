@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useNavigate, Navigate } from 'react-router-dom';
 import { useAppSelector, useAppDispatch } from '../lib/store';
 import { addSummary } from '../lib/searchSlice';
-import { fetchSummary, type SearchResult } from '../lib/search';
+import { fetchSummary, type SearchResult } from '../lib/services';
 import DashboardAnalysis from '../components/DashboardAnalysis';
 import ThemeToggle from '../components/ThemeToggle';
 import styles from '../styles/Dashboard.module.scss';
@@ -175,6 +175,7 @@ function DashboardFeedView() {
     }, [filter]);
 
     // Fetch summary only for the currently selected article (if not already in store)
+    const sessionId = useAppSelector((state) => state.search.sessionId);
     useEffect(() => {
         const fetchCurrentSummary = async () => {
             if (!selectedArticle?.url) return;
@@ -182,7 +183,7 @@ function DashboardFeedView() {
 
             setLoadingUrl(selectedArticle.url);
             try {
-                const summary = await fetchSummary(selectedArticle.url);
+                const summary = await fetchSummary(selectedArticle.url, sessionId ?? '');
                 dispatch(addSummary(summary)); // Save to Redux store
             } catch (error) {
                 console.error(`Failed to fetch summary for ${selectedArticle.url}:`, error);
@@ -192,7 +193,7 @@ function DashboardFeedView() {
         };
 
         fetchCurrentSummary();
-    }, [selectedArticle?.url, summaries, dispatch]);
+    }, [selectedArticle?.url, summaries, dispatch, sessionId]);
 
     const currentSummary = selectedArticle ? summaries[selectedArticle.url] : null;
     const isLoadingSummary = loadingUrl === selectedArticle?.url;
@@ -381,16 +382,6 @@ function DashboardFeedView() {
 
                         {/* Footer Actions */}
                         <div className={styles.readerFooter}>
-                            <div className={styles.readerActions}>
-                                <button className={styles.readerActionBtn}>
-                                    <span className="material-symbols-outlined">share</span>
-                                    <span>Share</span>
-                                </button>
-                                <button className={styles.readerActionBtn}>
-                                    <span className="material-symbols-outlined">bookmark</span>
-                                    <span>Save</span>
-                                </button>
-                            </div>
                             <a
                                 href={selectedArticle.url}
                                 target="_blank"
