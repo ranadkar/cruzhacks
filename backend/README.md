@@ -101,6 +101,35 @@ Content-Type: application/json
 ```
 Returns key takeaways from left and right perspectives plus common ground.
 
+### Chat
+```http
+POST /chat
+Content-Type: application/json
+
+{
+  "session_id": "uuid",
+  "message": "What are the main perspectives on this topic?"
+}
+```
+Returns an AI-generated response (under 400 chars) based on all articles in the session, plus 0-3 follow-up suggestions with short UI labels:
+```json
+{
+  "response": "The debate centers around...",
+  "follow_up_suggestions": [
+    {
+      "short": "Conservative view?",
+      "full": "What do conservative sources say about this?"
+    },
+    {
+      "short": "Compare to 2020?",
+      "full": "How does this situation compare to what happened in 2020?"
+    }
+  ]
+}
+```
+
+**UI Usage:** Display `short` as clickable buttons, send `full` as the next message when clicked.
+
 ## Setup
 
 1. Install dependencies:

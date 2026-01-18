@@ -116,6 +116,47 @@ def test_insights(articles, session_id):
     return data
 
 
+def test_chat(session_id):
+    """Test the /chat endpoint."""
+    print(f"\n=== Testing Chat ===")
+    
+    message = "What are the main perspectives on this topic?"
+    
+    response = requests.post(
+        f"{BASE_URL}/chat", 
+        json={"session_id": session_id, "message": message}
+    )
+    
+    if response.status_code != 200:
+        print(f"❌ Failed: Status code {response.status_code}")
+        if response.status_code == 404:
+            print(f"   Detail: {response.json().get('detail', 'Unknown error')}")
+        return None
+    
+    data = response.json()
+    
+    if "error" in data:
+        print(f"❌ Error: {data['error']}")
+        return None
+    
+    print(f"✓ Chat response generated")
+    print(f"\n  USER: {message}")
+    print(f"\n  ASSISTANT: {data.get('response', '')[:200]}...")
+    
+    suggestions = data.get('follow_up_suggestions', [])
+    if suggestions:
+        print(f"\n  FOLLOW-UP SUGGESTIONS ({len(suggestions)}):")
+        for i, suggestion in enumerate(suggestions, 1):
+            if isinstance(suggestion, dict):
+                print(f"    {i}. {suggestion.get('short', '')} → {suggestion.get('full', '')}")
+            else:
+                print(f"    {i}. {suggestion}")
+    else:
+        print(f"\n  No follow-up suggestions")
+    
+    return data
+
+
 if __name__ == "__main__":
     print("Starting API Tests...")
     print("Make sure the server is running on http://localhost:8000")
@@ -130,5 +171,9 @@ if __name__ == "__main__":
     # Test 3: Get insights from all abortion articles
     if session_id and abortion_results and len(abortion_results) > 0:
         test_insights(abortion_results, session_id)
+    
+    # Test 4: Chat with the assistant
+    if session_id and abortion_results and len(abortion_results) > 0:
+        test_chat(session_id)
     
     print("\n=== All Tests Complete ===")

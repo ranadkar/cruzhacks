@@ -26,8 +26,9 @@ from database import (
     session_exists,
     store_articles_batch,
     get_article,
+    get_all_articles,
 )
-from sentiment import analyze_sentiment, classify_bias, generate_summary, generate_insights
+from sentiment import analyze_sentiment, classify_bias, generate_summary, generate_insights, chat_with_context
 from utils import strip_html_tags, to_epoch_time
 from search import search_news, search_reddit, search_bluesky
 
@@ -357,6 +358,47 @@ async def insights(session_id: str = Body(...), articles: list[dict] = Body(...)
     except Exception as e:
         print(f"Error generating insights: {e}")
         return {"error": f"Failed to generate insights: {str(e)}"}
+
+
+@app.post("/chat")
+async def chat(session_id: str = Body(...), message: str = Body(...)):
+    """
+    Chat with the AI assistant based on articles in the session.
+    
+    Args:
+        session_id: The session ID from the search endpoint
+        message: User's message/question
+        
+    Returns:
+        {
+            "response": str (max 400 chars),
+            "follow_up_suggestions": [
+                {"short": "2-4 words", "full": "complete question"}
+            ]
+        }
+    """
+    # Check if the session exists
+    if not await session_exists(session_id):
+        raise HTTPException(
+            status_code=404, detail="Session not found. Please search for content first."
+        )
+    
+    # Get all articles from the session
+    articles = await get_all_articles(session_id)
+    
+    if not articles:
+        raise HTTPException(
+            status_code=400, 
+            detail="No articles found in this session. Please search for content first."
+        )
+    
+    # Generate chat response with follow-up suggestions
+    try:
+        result = await chat_with_context(message, articles)
+        return result
+    except Exception as e:
+        print(f"Error in chat endpoint: {e}")
+        return {"error": f"Failed to generate response: {str(e)}"}
 
 
 if __name__ == "__main__":

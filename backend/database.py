@@ -110,3 +110,13 @@ async def get_article(session_id: str, url: str) -> dict | None:
         if row:
             return json.loads(row["data"])
         return None
+
+
+async def get_all_articles(session_id: str) -> list[dict]:
+    """Retrieve all articles for a session."""
+    async with db_pool.acquire() as conn:
+        rows = await conn.fetch(
+            "SELECT data FROM articles WHERE session_id = $1",
+            uuid.UUID(session_id)
+        )
+        return [json.loads(row["data"]) for row in rows]

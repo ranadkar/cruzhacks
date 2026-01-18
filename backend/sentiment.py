@@ -1,10 +1,16 @@
 """Sentiment analysis and bias classification."""
 import asyncio
+import os
+from dotenv import load_dotenv
 from openai import OpenAI
 from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
+from google import genai
+
+load_dotenv()
 
 # Initialize analyzers
-client = OpenAI()
+client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+gemini_client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
 sentiment_analyzer = SentimentIntensityAnalyzer()
 
 
@@ -104,4 +110,113 @@ Format your response as JSON with these three keys: key_takeaway_left (string), 
         return json.loads(response.choices[0].message.content.strip())
     except Exception as e:
         print(f"Error generating insights: {e}")
+        raise
+
+
+async def chat_with_context(message: str, articles: list[dict]) -> dict:
+    """
+    Chat with the user based on the context of their articles.
+    
+    Args:
+        message: User's message/question
+        articles: List of article dictionaries with title, source, bias, contents
+        
+    Returns:
+        {
+            "response": str,
+            "follow_up_suggestions": list[dict]  # 0-3 suggestions with short/full versions
+        }
+    """
+    try:
+        # Build context from articles
+        context_parts = []
+        for i, article in enumerate(articles[:30], 1):  # Limit to 30 articles for token limits
+            source = article.get("source", "Unknown")
+            bias = article.get("bias", "unknown")
+            title = article.get("title", "")
+            contents = article.get("contents", "")[:500]  # Limit content length
+            
+            context_parts.append(f"[{i}] {source} ({bias}): {title}\n{contents}")
+        
+        context = "\n\n".join(context_parts)
+        
+        # Create the prompt
+        prompt = f"""You are a helpful assistant analyzing news and social media posts about current events. You have access to articles from various sources with different political perspectives.
+
+CONTEXT - Available articles:
+{context[:15000]}
+
+USER QUESTION: {message}
+
+Provide a thoughtful, balanced response that considers multiple perspectives. Be conversational and helpful. IMPORTANT: Keep your response under 400 characters - be concise and to the point."""
+
+        # Use Gemini 3 Flash for chat
+        response = await asyncio.to_thread(
+            gemini_client.models.generate_content,
+            model="gemini-2.5-flash",
+            contents=prompt
+        )
+
+        chat_response = response.text.strip()
+        
+        # Generate follow-up suggestions using Gemini
+        suggestions_prompt = f"""Based on this conversation:
+
+User asked: {message}
+Assistant responded: {chat_response}
+
+Generate 0-3 brief follow-up questions or rebuttals the user might ask to continue the conversation. 
+
+For each follow-up, provide:
+1. A SHORT version (2-4 words) for UI display
+2. A FULL version (the complete question, 8-15 words)
+
+Return as JSON with this structure:
+{{
+  "suggestions": [
+    {{"short": "Conservative view?", "full": "What do conservative sources say about this?"}},
+    {{"short": "Compare to 2020?", "full": "How does this situation compare to what happened in 2020?"}}
+  ]
+}}
+
+The suggestions should:
+- Explore different angles or perspectives
+- Challenge or deepen the discussion
+- Be natural conversation continuations
+
+If no good follow-ups exist, return empty array."""
+
+        suggestions_response = await asyncio.to_thread(
+            gemini_client.models.generate_content,
+            model="gemini-2.5-flash",
+            contents=suggestions_prompt,
+            config={
+                "response_mime_type": "application/json"
+            }
+        )
+        
+        import json
+        suggestions_data = json.loads(suggestions_response.text.strip())
+        
+        # Extract suggestions array
+        suggestions = suggestions_data.get("suggestions", [])
+            
+        # Ensure it's a list and limit to 3
+        if not isinstance(suggestions, list):
+            suggestions = []
+        suggestions = suggestions[:3]
+        
+        # Validate structure
+        valid_suggestions = []
+        for s in suggestions:
+            if isinstance(s, dict) and "short" in s and "full" in s:
+                valid_suggestions.append(s)
+        
+        return {
+            "response": chat_response,
+            "follow_up_suggestions": valid_suggestions
+        }
+        
+    except Exception as e:
+        print(f"Error in chat: {e}")
         raise
